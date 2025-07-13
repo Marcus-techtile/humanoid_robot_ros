@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>humanoid_robot_ros</name>
+  <version>0.0.0</version>
+  <description>Meta package for G1 Unitree ROS control system including simulation, control, description, and bringup packages</description>
+
+  <!-- One maintainer tag required -->
+  <maintainer email="manhcuong313.ng@gmail.com">marcus</maintainer>
+
+  <!-- One license tag required -->
+  <license>TODO</license>
+
+  <!-- URL tags are optional -->
+  <url type="website">https://github.com/Marcus-techtile/humanoid_robot_ros</url>
+
+  <!-- Author tags are optional -->
+  <author email="manhcuong313.ng@gmail.com">marcus</author>
+
+  <!-- Dependencies for building -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Meta package dependencies - all constituent packages -->
+  <exec_depend>g1_control</exec_depend>
+  <exec_depend>g1_description</exec_depend>
+  <exec_depend>g1_bringup</exec_depend>
+  <exec_depend>g1_mujoco_sim</exec_depend>
+
+  <!-- Mark this as a meta package -->
+  <export>
+    <metapackage />
+  </export>
+</package> 
