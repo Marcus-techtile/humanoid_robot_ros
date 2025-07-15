@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<robot name="g1_robot">
+  <!-- Simple URDF for G1 Robot - Used for robot_state_publisher compatibility -->
+  <!-- The actual simulation uses the MuJoCo model -->
+  
+  <link name="world"/>
+  
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.3 0.24 0.16"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </visual>
+  </link>
+  
+  <joint name="world_to_base" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.85" rpy="0 0 0"/>
+  </joint>
+</robot> 

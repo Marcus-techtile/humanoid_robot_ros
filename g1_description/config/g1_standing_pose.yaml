@@ -1,0 +1,110 @@
+# Standing pose configuration for Official Unitree G1 Humanoid Robot
+# All angles in radians
+
+standing_pose:
+  # Left leg joints (6 DOF) - Based on stable "home" keyframe
+  left_hip_pitch_joint: -0.05   # Less hip flexion for stability
+  left_hip_roll_joint: 0.0     # No abduction
+  left_hip_yaw_joint: 0.0      # No rotation
+  left_knee_joint: 0.3         # Moderate knee flexion
+  left_ankle_pitch_joint: -0.2 # Moderate ankle dorsiflexion
+  left_ankle_roll_joint: 0.0   # No ankle roll
+  
+  # Right leg joints (6 DOF) - Symmetric to left
+  right_hip_pitch_joint: -0.05
+  right_hip_roll_joint: 0.0
+  right_hip_yaw_joint: 0.0
+  right_knee_joint: 0.3
+  right_ankle_pitch_joint: -0.2
+  right_ankle_roll_joint: 0.0
+  
+  # Waist joints (3 DOF)
+  waist_yaw_joint: 0.0
+  waist_roll_joint: 0.0
+  waist_pitch_joint: 0.0
+  
+  # Left arm joints (7 DOF) - Based on stable "home" keyframe
+  left_shoulder_pitch_joint: 0.2   # Arms slightly forward
+  left_shoulder_roll_joint: 0.2    # Arms away from body
+  left_shoulder_yaw_joint: 0.0
+  left_elbow_joint: 1.28           # More elbow bend for stability
+  left_wrist_roll_joint: 0.0
+  left_wrist_pitch_joint: 0.0
+  left_wrist_yaw_joint: 0.0
+  
+  # Right arm joints (7 DOF) - Symmetric to left
+  right_shoulder_pitch_joint: 0.2
+  right_shoulder_roll_joint: -0.2  # Negative for right arm
+  right_shoulder_yaw_joint: 0.0
+  right_elbow_joint: 1.28
+  right_wrist_roll_joint: 0.0
+  right_wrist_pitch_joint: 0.0
+  right_wrist_yaw_joint: 0.0
+
+# PD control gains for standing (based on official actuator ranges)
+control_gains:
+  # Position gains (Kp) - Reduced for MJX model stability
+  kp:
+    # Leg joints (high torque motors)
+    hip_pitch: 150.0
+    hip_roll: 150.0
+    hip_yaw: 150.0
+    knee: 150.0
+    ankle_pitch: 50.0   # Lower for ankle joints
+    ankle_roll: 50.0
+    # Waist joints (medium torque)
+    waist_yaw: 150.0
+    waist_roll: 50.0
+    waist_pitch: 50.0
+    # Arm joints (low torque motors)
+    shoulder_pitch: 75.0
+    shoulder_roll: 75.0
+    shoulder_yaw: 75.0
+    elbow: 75.0
+    wrist_roll: 20.0    # Lower for wrist joints
+    wrist_pitch: 20.0
+    wrist_yaw: 20.0
+    
+  # Derivative gains (Kd) - Matched to MJX model defaults
+  kd:
+    # Leg joints
+    hip_pitch: 5.0
+    hip_roll: 5.0
+    hip_yaw: 5.0
+    knee: 5.0
+    ankle_pitch: 2.0
+    ankle_roll: 2.0
+    # Waist joints
+    waist_yaw: 5.0
+    waist_roll: 2.0
+    waist_pitch: 2.0
+    # Arm joints
+    shoulder_pitch: 3.0
+    shoulder_roll: 3.0
+    shoulder_yaw: 3.0
+    elbow: 3.0
+    wrist_roll: 2.0
+    wrist_pitch: 2.0
+    wrist_yaw: 2.0
+
+# Safety limits based on official actuator ranges
+safety_limits:
+  max_torque: 
+    hip_pitch: 88.0     # N.m
+    hip_roll: 139.0
+    hip_yaw: 88.0
+    knee: 139.0
+    ankle_pitch: 50.0
+    ankle_roll: 50.0
+    waist_yaw: 88.0
+    waist_roll: 50.0
+    waist_pitch: 50.0
+    shoulder_pitch: 25.0
+    shoulder_roll: 25.0
+    shoulder_yaw: 25.0
+    elbow: 25.0
+    wrist_roll: 15.0    # Estimated for wrist joints
+    wrist_pitch: 15.0
+    wrist_yaw: 15.0
+  max_velocity: 10.0    # rad/s
+  position_tolerance: 0.1  # rad 

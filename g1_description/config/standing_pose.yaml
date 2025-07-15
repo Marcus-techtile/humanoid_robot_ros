@@ -1,0 +1,83 @@
+# Standing pose configuration for Unitree G1 Humanoid Robot
+# All angles in radians
+
+standing_pose:
+  # Left leg joints
+  left_hip_yaw_joint: 0.0
+  left_hip_roll_joint: 0.0
+  left_hip_pitch_joint: -0.3  # Slight hip flexion
+  left_knee_joint: 0.6        # Knee flexion
+  left_ankle_pitch_joint: -0.3 # Ankle dorsiflexion
+  left_ankle_roll_joint: 0.0
+  
+  # Right leg joints
+  right_hip_yaw_joint: 0.0
+  right_hip_roll_joint: 0.0
+  right_hip_pitch_joint: -0.3
+  right_knee_joint: 0.6
+  right_ankle_pitch_joint: -0.3
+  right_ankle_roll_joint: 0.0
+  
+  # Torso joint
+  waist_yaw_joint: 0.0
+  
+  # Left arm joints
+  left_shoulder_pitch_joint: 0.3  # Arms slightly forward
+  left_shoulder_roll_joint: 0.2   # Arms slightly away from body
+  left_elbow_joint: -0.5          # Elbow bent
+  left_wrist_joint: 0.0
+  
+  # Right arm joints
+  right_shoulder_pitch_joint: 0.3
+  right_shoulder_roll_joint: -0.2
+  right_elbow_joint: -0.5
+  right_wrist_joint: 0.0
+  
+  # Head joint
+  head_yaw_joint: 0.0
+
+# PD control gains for standing
+control_gains:
+  # Position gains (Kp)
+  kp:
+    # Leg joints (higher gains for stability)
+    hip_yaw: 300.0
+    hip_roll: 350.0
+    hip_pitch: 400.0
+    knee: 400.0
+    ankle_pitch: 300.0
+    ankle_roll: 300.0
+    # Torso
+    waist: 200.0
+    # Arm joints (lower gains)
+    shoulder_pitch: 100.0
+    shoulder_roll: 100.0
+    elbow: 80.0
+    wrist: 50.0
+    # Head
+    head: 50.0
+    
+  # Derivative gains (Kd)
+  kd:
+    # Leg joints
+    hip_yaw: 30.0
+    hip_roll: 35.0
+    hip_pitch: 40.0
+    knee: 40.0
+    ankle_pitch: 30.0
+    ankle_roll: 30.0
+    # Torso
+    waist: 20.0
+    # Arm joints
+    shoulder_pitch: 10.0
+    shoulder_roll: 10.0
+    elbow: 8.0
+    wrist: 5.0
+    # Head
+    head: 5.0
+
+# Safety limits
+safety_limits:
+  max_torque: 100.0  # Nm
+  max_velocity: 10.0  # rad/s
+  position_tolerance: 0.1  # rad 
