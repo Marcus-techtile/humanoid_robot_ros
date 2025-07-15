@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- G1 Humanoid Robot Standing Demo -->
+    
+    <!-- Simulation Parameters -->
+    <arg name="enable_mujoco_gui" default="true"/>
+    <arg name="enable_rviz" default="true"/>
+    
+    <!-- Load robot description (we'll use a simple URDF for now) -->
+    <param name="robot_description" command="cat $(find g1_description)/urdf/g1_simple.urdf"/>
+    
+    <!-- Include MuJoCo Simulation -->
+    <include file="$(find g1_mujoco_sim)/launch/mujoco_sim.launch">
+        <arg name="enable_visualization" value="$(arg enable_mujoco_gui)"/>
+    </include>
+    
+    <!-- Launch G1 Standing Controller after a delay -->
+    <node pkg="g1_control" type="g1_standing_controller.py" name="g1_standing_controller" 
+          output="screen" launch-prefix="bash -c 'sleep 0; $0 $@'">
+        <param name="config_path" value="$(find g1_description)/config/g1_standing_pose.yaml"/>
+        <param name="control_rate" value="500"/>
+        <param name="enable_control" value="true"/>
+        <param name="startup_duration" value="0.0"/>
+    </node>
+    
+    <!-- Launch RViz if requested -->
+    <group if="$(arg enable_rviz)">
+        <node name="rviz" pkg="rviz" type="rviz" 
+              args="-d $(find g1_bringup)/config/g1_visualization.rviz"/>
+    </group>
+</launch> 

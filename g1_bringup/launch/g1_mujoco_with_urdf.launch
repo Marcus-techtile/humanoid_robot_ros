@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Arguments -->
+  <arg name="model_path" default="$(find g1_description)/scene_mjx.xml" />
+  <arg name="sim_rate" default="1000" />
+  <arg name="publish_rate" default="100" />
+  <arg name="enable_visualization" default="true" />
+  <arg name="rviz" default="true" />
+  <arg name="gui" default="false" />
+  
+  <!-- Load robot description from URDF -->
+  <param name="robot_description" command="$(find xacro)/xacro $(find g1_description)/urdf/g1_complete.urdf" />
+  
+  <!-- Robot state publisher -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
+    <param name="publish_frequency" type="double" value="$(arg publish_rate)" />
+    <param name="tf_prefix" type="string" value="" />
+  </node>
+  
+  <!-- MuJoCo simulation node -->
+  <node name="mujoco_sim_node" pkg="g1_mujoco_sim" type="mujoco_sim_node.py" output="screen">
+    <param name="model_path" value="$(arg model_path)" />
+    <param name="sim_rate" value="$(arg sim_rate)" />
+    <param name="publish_rate" value="$(arg publish_rate)" />
+    <param name="enable_visualization" value="$(arg enable_visualization)" />
+    <remap from="/joint_states" to="/joint_states" />
+  </node>
+  
+  <!-- Joint state publisher GUI (optional, for manual joint control when simulation is not running) -->
+  <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" respawn="false" output="screen" if="$(arg gui)" />
+  
+  <!-- Rviz for visualization -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find g1_bringup)/config/g1_visualization.rviz" respawn="false" output="screen" if="$(arg rviz)" />
+  
+</launch> 

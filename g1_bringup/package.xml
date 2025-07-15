@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>g1_bringup</name>
+  <version>0.0.0</version>
+  <description>The g1_bringup package</description>
+
+  <maintainer email="manhcuong313.ng@gmail.com">marcus</maintainer>
+  <license>TODO</license>
+  <url type="website">https://github.com/Marcus-techtile/humanoid_robot_ros</url>
+  <author email="manhcuong313.ng@gmail.com">marcus</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies on other packages in the meta package -->
+  <exec_depend>g1_control</exec_depend>
+  <exec_depend>g1_description</exec_depend>
+  <exec_depend>g1_mujoco_sim</exec_depend>
+
+  <export>
+  </export>
+</package>
