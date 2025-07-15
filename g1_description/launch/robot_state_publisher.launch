@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Load robot description -->
+  <param name="robot_description" command="$(find xacro)/xacro $(find g1_description)/urdf/g1_complete.urdf" />
+  
+  <!-- Robot state publisher -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
+    <param name="publish_frequency" type="double" value="100.0" />
+    <param name="tf_prefix" type="string" value="" />
+  </node>
+  
+  <!-- Joint state publisher GUI (optional, for manual joint control) -->
+  <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" respawn="false" output="screen" if="$(arg gui)" />
+  
+  <!-- Rviz for visualization -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find g1_description)/config/g1_visualization.rviz" respawn="false" output="screen" if="$(arg rviz)" />
+  
+  <!-- Launch arguments -->
+  <arg name="gui" default="false" />
+  <arg name="rviz" default="false" />
+</launch> 
