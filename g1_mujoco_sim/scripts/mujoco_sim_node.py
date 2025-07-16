@@ -101,6 +101,7 @@ class MujocoSimPassiveNode:
         # Control variables
         self.joint_commands = np.zeros(len(self.joint_names))
         self.command_lock = threading.Lock()
+        self.has_new_commands = False
         
         # Simulation parameters
         self.sim_rate = rospy.get_param('~sim_rate', 1000)  # Hz
@@ -129,6 +130,7 @@ class MujocoSimPassiveNode:
         
         with self.command_lock:
             self.joint_commands = np.array(msg.data)
+            self.has_new_commands = True
         
         rospy.logdebug(f"Received joint commands: {self.joint_commands[:5]}...")  # Log first 5 values
     
@@ -143,22 +145,24 @@ class MujocoSimPassiveNode:
         while not rospy.is_shutdown():
             start_time = time.time()
             
-            # Apply control commands to actuators
+            # Apply control commands to actuators only if new data is available
             with self.command_lock:
-                for i, name in enumerate(self.joint_names):
-                    if name in self.joint_indices:
-                        # For the official G1 model, actuator names match joint names
-                        try:
-                            actuator_id = self.model.actuator(name).id
-                            self.data.ctrl[actuator_id] = self.joint_commands[i]
-                        except Exception as e:
-                            # Fallback: try without "_joint" suffix
+                if self.has_new_commands:
+                    for i, name in enumerate(self.joint_names):
+                        if name in self.joint_indices:
+                            # For the official G1 model, actuator names match joint names
                             try:
-                                actuator_name = name.replace("_joint", "")
-                                actuator_id = self.model.actuator(actuator_name).id
+                                actuator_id = self.model.actuator(name).id
                                 self.data.ctrl[actuator_id] = self.joint_commands[i]
-                            except:
-                                pass
+                            except Exception as e:
+                                # Fallback: try without "_joint" suffix
+                                try:
+                                    actuator_name = name.replace("_joint", "")
+                                    actuator_id = self.model.actuator(actuator_name).id
+                                    self.data.ctrl[actuator_id] = self.joint_commands[i]
+                                except:
+                                    pass
+                    self.has_new_commands = False
             
             # Step simulation
             mujoco.mj_step(self.model, self.data)
