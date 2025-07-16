@@ -165,6 +165,8 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/mujoco_sim_node.py
+  scripts/debug_actuators.py
+  scripts/test_mujoco_model.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

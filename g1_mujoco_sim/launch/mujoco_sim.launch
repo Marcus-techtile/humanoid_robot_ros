@@ -13,6 +13,12 @@
         <param name="publish_rate" value="$(arg publish_rate)"/>
         <param name="enable_visualization" value="$(arg enable_visualization)"/>
     </node>
+
+    <!-- Robot Description -->
+    <arg name="robot_description_file" default="$(find g1_description)/urdf/g1_complete.urdf"/>
+    
+    <!-- Load robot description -->
+    <param name="robot_description" command="cat $(arg robot_description_file)"/>
     
     <!-- Robot State Publisher for TF tree -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
