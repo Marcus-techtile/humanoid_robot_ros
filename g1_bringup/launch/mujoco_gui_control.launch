@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Joint Controller Parameters -->
+    <arg name="control_rate" default="100"/>
+    <arg name="max_joint_velocity" default="2.0"/>
+    <arg name="position_tolerance" default="0.001"/>
+    <arg name="direct_mode" default="true"/>
+    
+    <!-- Topic Configuration -->
+    <arg name="joint_command_topic" default="joint_commands_input"/>
+    <arg name="joint_output_topic" default="/joint_commands"/>
+    
+
+    <!-- MuJoCo Simulation Parameters -->
+    <arg name="model_path" default="$(find g1_description)/scene_mjx.xml"/>
+    <arg name="sim_rate" default="1000"/>
+    <arg name="enable_visualization" default="true"/>
+    
+    <!-- Robot Description -->
+    <arg name="robot_description_file" default="$(find g1_description)/urdf/g1_complete.urdf"/>
+    
+    <!-- Visualization -->
+    <arg name="rviz" default="true"/>
+    
+    <!-- Load robot description -->
+    <param name="robot_description" command="cat $(arg robot_description_file)"/>
+    
+    <!-- Launch MuJoCo Simulation  -->
+    <node name="mujoco_sim_node" pkg="g1_mujoco_sim" type="mujoco_sim_node.py" output="screen">
+        <param name="model_path" value="$(arg model_path)"/>
+        <param name="sim_rate" value="$(arg sim_rate)"/>
+        <param name="enable_visualization" value="$(arg enable_visualization)"/>
+        <param name="publish_joint_states" value="true"/>  <!-- KEY: Don't publish joint states -->
+        <param name="publish_base_pose" value="true"/>      <!-- Still publish base pose for monitoring -->
+    </node>
+
+    <!-- Robot State Publisher for visualization -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen">
+        <param name="publish_frequency" value="100"/>
+    </node>
+    
+    <!-- Include Joint Controller Launch File -->
+    <include file="$(find g1_control)/launch/joint_controller.launch">
+        <arg name="control_rate" value="$(arg control_rate)"/>
+        <arg name="max_joint_velocity" value="$(arg max_joint_velocity)"/>
+        <arg name="position_tolerance" value="$(arg position_tolerance)"/>
+        <arg name="direct_mode" value="$(arg direct_mode)"/>
+        <arg name="joint_command_topic" value="$(arg joint_command_topic)"/>
+        <arg name="joint_output_topic" value="$(arg joint_output_topic)"/>
+    </include>
+    
+    
+    <!-- Optional: RViz for visualization -->
+    <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz" 
+          args="-d $(find g1_bringup)/config/g1_visualization.rviz" output="screen"/>
+    
+</launch> 
