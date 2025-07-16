@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Joint Controller Parameters -->
+    <arg name="control_rate" default="100"/>
+    <arg name="max_joint_velocity" default="2.0"/>
+    <arg name="position_tolerance" default="0.001"/>
+    <arg name="direct_mode" default="true"/>
+    
+    <!-- Topic Configuration for Direct Commands -->
+    <arg name="joint_command_topic" default="/joint_states"/>
+    <arg name="joint_output_topic" default="/joint_commands"/>
+    
+    <!-- Example: Custom joint names (optional) -->
+    <rosparam param="/joint_controller/robot_joint_names">
+        [
+            "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+            "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+            "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint", 
+            "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+            "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+            "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint",
+            "left_elbow_joint", "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint",
+            "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint",
+            "right_elbow_joint", "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint"
+        ]
+    </rosparam>
+    
+    <!-- Launch General Joint Controller Node (Direct Mode) -->
+    <node name="joint_controller" pkg="g1_control" type="joint_controller" output="screen">
+        <param name="control_rate" value="$(arg control_rate)"/>
+        <param name="max_joint_velocity" value="$(arg max_joint_velocity)"/>
+        <param name="position_tolerance" value="$(arg position_tolerance)"/>
+        <param name="direct_mode" value="$(arg direct_mode)"/>
+        <param name="joint_command_topic" value="$(arg joint_command_topic)"/>
+        <param name="joint_output_topic" value="$(arg joint_output_topic)"/>
+    </node>
+    
+    <!-- Example: You can send commands like this:
+         rostopic pub /direct_joint_commands std_msgs/Float64MultiArray "data: [0.0, 0.1, 0.0, 0.2, 0.0, 0.0, 0.0, 0.1, 0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+    -->
+    
+</launch> 
