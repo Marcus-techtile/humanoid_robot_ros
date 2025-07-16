@@ -36,3 +36,17 @@ catkin_make
 source devel/setup.bash
 ```
 
+## Running
+To launch the G1 robot with MuJoCo visualization and ROS with visualization on RVIZ
+
+```bash
+roslaunch g1_bringup g1_standing_demo.launch
+```
+
+This will:
+- Start the MuJoCo physics simulation with GUI using scene_mjx.xml
+- Load the G1 robot model in ros and visualiza on rviz
+- Launch the robot controller
+- Joints can be controlled using the MuJoCo GUI
+- Robot states on ROS are synced with MuJuCo
+
