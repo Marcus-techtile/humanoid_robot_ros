@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- MuJoCo Simulation Parameters -->
+    <arg name="model_path" default="$(find g1_description)/scene_mjx.xml"/>
+    <arg name="sim_rate" default="1000"/>
+    <arg name="publish_rate" default="100"/>
+    <arg name="enable_visualization" default="true"/>
+    
+    <!-- Launch MuJoCo Simulator Node -->
+    <node name="mujoco_sim_node" pkg="g1_mujoco_sim" type="mujoco_sim_with_forces.py" output="screen">
+        <param name="model_path" value="$(arg model_path)"/>
+        <param name="sim_rate" value="$(arg sim_rate)"/>
+        <param name="publish_rate" value="$(arg publish_rate)"/>
+        <param name="enable_visualization" value="$(arg enable_visualization)"/>
+        <param name="enable_external_forces" value="true"/>
+    </node>
+
+    <!-- Robot Description -->
+    <arg name="robot_description_file" default="$(find g1_description)/urdf/g1_complete.urdf"/>
+    
+    <!-- Load robot description -->
+    <param name="robot_description" command="cat $(arg robot_description_file)"/>
+    
+    <!-- Robot State Publisher for TF tree -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="publish_frequency" value="100"/>
+    </node>
+</launch> 

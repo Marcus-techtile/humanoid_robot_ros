@@ -4,7 +4,7 @@ import mujoco
 import numpy as np
 
 # Load the MuJoCo model
-model_path = "src/g1_description/scene_mjx.xml"
+model_path = "../../g1_description/scene_mjx.xml"
 model = mujoco.MjModel.from_xml_path(model_path)
 data = mujoco.MjData(model)
 

@@ -6,8 +6,8 @@ import mujoco
 import mujoco.viewer
 import threading
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Float64MultiArray
-from geometry_msgs.msg import PoseStamped, TwistStamped
+from std_msgs.msg import Float64MultiArray, Bool, String
+from geometry_msgs.msg import PoseStamped, TwistStamped, Wrench, Vector3
 from visualization_msgs.msg import Marker
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
@@ -15,7 +15,7 @@ import os
 import time
 
 
-class MujocoSimPassiveNode:
+class MujocoSimWithForcesNode:
     def __init__(self):
         rospy.init_node('mujoco_sim_node', anonymous=True)
         
@@ -78,8 +78,14 @@ class MujocoSimPassiveNode:
             except:
                 rospy.logwarn(f"Joint {name} not found in model")
         
+        # External force management (NEW)
+        self.external_forces = {}
+        self.force_duration = {}
+        self.force_lock = threading.Lock()
+        self.enable_external_forces = rospy.get_param('~enable_external_forces', True)
+        
         # Publishers (selective publishing based on parameters)
-        self.publish_joint_states = rospy.get_param('~publish_joint_states', False)
+        self.publish_joint_states = rospy.get_param('~publish_joint_states', True)  # Default True for testing
         self.publish_base_pose = rospy.get_param('~publish_base_pose', True)
         
         if self.publish_joint_states:
@@ -97,6 +103,18 @@ class MujocoSimPassiveNode:
         # Subscribers
         self.joint_cmd_sub = rospy.Subscriber('/joint_commands', Float64MultiArray, 
                                             self.joint_command_callback, queue_size=1)
+        
+        # External force subscribers (NEW)
+        if self.enable_external_forces:
+            self.external_force_sub = rospy.Subscriber('/external_force', Wrench,
+                                                     self.external_force_callback, queue_size=1)
+            self.disturbance_sub = rospy.Subscriber('/apply_disturbance', Vector3,
+                                                  self.disturbance_callback, queue_size=1)
+            self.reset_forces_sub = rospy.Subscriber('/reset_forces', Bool,
+                                                   self.reset_forces_callback, queue_size=1)
+            # Force status publisher
+            self.force_status_pub = rospy.Publisher('/force_status', String, queue_size=10)
+            rospy.loginfo("External force capability ENABLED")
         
         # Control variables
         self.joint_commands = np.zeros(len(self.joint_names))
@@ -118,7 +136,7 @@ class MujocoSimPassiveNode:
             self.publish_timer = rospy.Timer(rospy.Duration(1.0/self.publish_rate), 
                                            self.publish_callback)
         
-        rospy.loginfo("MuJoCo simulation node started")
+        rospy.loginfo("MuJoCo simulation with forces node started")
         rospy.loginfo(f"Listening for joint commands on /joint_commands")
         rospy.loginfo(f"Simulation rate: {self.sim_rate} Hz")
     
@@ -134,6 +152,105 @@ class MujocoSimPassiveNode:
         
         rospy.logdebug(f"Received joint commands: {self.joint_commands[:5]}...")  # Log first 5 values
     
+    # NEW: External force callback methods
+    def external_force_callback(self, msg):
+        """Handle external force application requests"""
+        if not self.enable_external_forces:
+            return
+        
+        force_vector = np.array([msg.force.x, msg.force.y, msg.force.z])
+        torque_vector = np.array([msg.torque.x, msg.torque.y, msg.torque.z])
+        
+        # Apply force to pelvis by default
+        self.apply_external_force("pelvis", force_vector, torque_vector, duration=0.1)
+        
+        rospy.loginfo(f"Applied force: {force_vector} N, torque: {torque_vector} Nm")
+    
+    def disturbance_callback(self, msg):
+        """Handle disturbance application (simplified force)"""
+        if not self.enable_external_forces:
+            return
+        
+        force_vector = np.array([msg.x, msg.y, msg.z])
+        
+        # Apply disturbance force
+        self.apply_external_force("pelvis", force_vector, duration=0.2)
+        
+        rospy.loginfo(f"Applied disturbance: {force_vector} N")
+    
+    def reset_forces_callback(self, msg):
+        """Reset all external forces"""
+        if msg.data and self.enable_external_forces:
+            self.reset_all_forces()
+            rospy.loginfo("Reset all external forces")
+    
+    def apply_external_force(self, body_name, force_vector, torque_vector=None, duration=0.1):
+        """Apply external force to specified body"""
+        try:
+            body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+            if body_id < 0:
+                rospy.logwarn(f"Body {body_name} not found")
+                return
+            
+            if torque_vector is None:
+                torque_vector = np.zeros(3)
+            
+            with self.force_lock:
+                # Store force and torque
+                self.external_forces[body_id] = np.concatenate([force_vector, torque_vector])
+                self.force_duration[body_id] = duration
+            
+            # Publish status
+            if hasattr(self, 'force_status_pub'):
+                status_msg = String()
+                status_msg.data = f"Applied {np.linalg.norm(force_vector):.1f}N force to {body_name}"
+                self.force_status_pub.publish(status_msg)
+            
+            rospy.loginfo(f"Applied force {force_vector} to {body_name} for {duration}s")
+            
+        except Exception as e:
+            rospy.logwarn(f"Failed to apply force to {body_name}: {e}")
+    
+    def reset_all_forces(self):
+        """Reset all external forces"""
+        with self.force_lock:
+            self.external_forces.clear()
+            self.force_duration.clear()
+        
+        # Clear MuJoCo force arrays
+        for i in range(self.model.nbody):
+            self.data.xfrc_applied[i][:] = 0
+        
+        if hasattr(self, 'force_status_pub'):
+            status_msg = String()
+            status_msg.data = "All forces reset"
+            self.force_status_pub.publish(status_msg)
+    
+    def update_external_forces(self, dt):
+        """Update external forces in simulation"""
+        if not self.enable_external_forces:
+            return
+            
+        with self.force_lock:
+            # Apply current forces
+            for body_id, force_torque in self.external_forces.items():
+                if body_id < self.model.nbody:
+                    self.data.xfrc_applied[body_id][:] = force_torque
+            
+            # Update durations and remove expired forces
+            expired_bodies = []
+            for body_id in self.force_duration:
+                self.force_duration[body_id] -= dt
+                if self.force_duration[body_id] <= 0:
+                    expired_bodies.append(body_id)
+            
+            # Remove expired forces
+            for body_id in expired_bodies:
+                del self.external_forces[body_id]
+                del self.force_duration[body_id]
+                if body_id < self.model.nbody:
+                    self.data.xfrc_applied[body_id][:] = 0
+    
     def simulation_loop(self):
         """Main simulation loop running in separate thread"""
         if self.enable_visualization:
@@ -141,9 +258,12 @@ class MujocoSimPassiveNode:
             rospy.loginfo("MuJoCo viewer launched")
         
         dt = 1.0 / self.sim_rate
+        last_time = time.time()
         
         while not rospy.is_shutdown():
             start_time = time.time()
+            actual_dt = start_time - last_time
+            last_time = start_time
             
             # Apply control commands to actuators only if new data is available
             with self.command_lock:
@@ -163,6 +283,10 @@ class MujocoSimPassiveNode:
                                 except:
                                     pass
                     self.has_new_commands = False
+            
+            # NEW: Update external forces
+            if self.enable_external_forces:
+                self.update_external_forces(actual_dt)
             
             # Step simulation
             mujoco.mj_step(self.model, self.data)
@@ -222,54 +346,61 @@ class MujocoSimPassiveNode:
             
             self.joint_state_pub.publish(joint_state)
         
-        # Publish base pose and twist if enabled
+        # Publish base pose and twist only if enabled
         if self.publish_base_pose:
-            # Publish base pose (using pelvis as main body in official G1 model)
-            base_id = self.model.body("pelvis").id
-            base_pos = self.data.xpos[base_id]
-            base_quat = self.data.xquat[base_id]
+            # Base pose (assuming freejoint for floating base)
+            base_pose = PoseStamped()
+            base_pose.header.stamp = rospy.Time.now()
+            base_pose.header.frame_id = "world"
             
-            pose_msg = PoseStamped()
-            pose_msg.header.stamp = rospy.Time.now()
-            pose_msg.header.frame_id = "world"
-            pose_msg.pose.position.x = base_pos[0]
-            pose_msg.pose.position.y = base_pos[1]
-            pose_msg.pose.position.z = base_pos[2]
-            pose_msg.pose.orientation.w = base_quat[0]
-            pose_msg.pose.orientation.x = base_quat[1]
-            pose_msg.pose.orientation.y = base_quat[2]
-            pose_msg.pose.orientation.z = base_quat[3]
+            # Position (first 3 elements of qpos)
+            if len(self.data.qpos) >= 7:
+                base_pose.pose.position.x = self.data.qpos[0]
+                base_pose.pose.position.y = self.data.qpos[1]
+                base_pose.pose.position.z = self.data.qpos[2]
+                
+                # Orientation (quaternion: w, x, y, z in qpos)
+                base_pose.pose.orientation.w = self.data.qpos[3]
+                base_pose.pose.orientation.x = self.data.qpos[4]
+                base_pose.pose.orientation.y = self.data.qpos[5]
+                base_pose.pose.orientation.z = self.data.qpos[6]
             
-            self.base_pose_pub.publish(pose_msg)
+            self.base_pose_pub.publish(base_pose)
             
-            # Publish base twist
-            base_vel = self.data.cvel[base_id]
-            twist_msg = TwistStamped()
-            twist_msg.header = pose_msg.header
-            twist_msg.twist.linear.x = base_vel[3]
-            twist_msg.twist.linear.y = base_vel[4]
-            twist_msg.twist.linear.z = base_vel[5]
-            twist_msg.twist.angular.x = base_vel[0]
-            twist_msg.twist.angular.y = base_vel[1]
-            twist_msg.twist.angular.z = base_vel[2]
+            # Base twist
+            base_twist = TwistStamped()
+            base_twist.header.stamp = rospy.Time.now()
+            base_twist.header.frame_id = "world"
             
-            self.base_twist_pub.publish(twist_msg)
+            if len(self.data.qvel) >= 6:
+                # Linear velocity
+                base_twist.twist.linear.x = self.data.qvel[0]
+                base_twist.twist.linear.y = self.data.qvel[1] 
+                base_twist.twist.linear.z = self.data.qvel[2]
+                
+                # Angular velocity
+                base_twist.twist.angular.x = self.data.qvel[3]
+                base_twist.twist.angular.y = self.data.qvel[4]
+                base_twist.twist.angular.z = self.data.qvel[5]
             
-            # Broadcast TF (keeping base_link as ROS standard frame name)
+            self.base_twist_pub.publish(base_twist)
+            
+            # Publish TF transform
             t = TransformStamped()
-            t.header = pose_msg.header
+            t.header.stamp = rospy.Time.now()
+            t.header.frame_id = "world"
             t.child_frame_id = "base_link"
-            t.transform.translation.x = base_pos[0]
-            t.transform.translation.y = base_pos[1]
-            t.transform.translation.z = base_pos[2]
-            t.transform.rotation = pose_msg.pose.orientation
+            t.transform.translation.x = base_pose.pose.position.x
+            t.transform.translation.y = base_pose.pose.position.y
+            t.transform.translation.z = base_pose.pose.position.z
+            t.transform.rotation = base_pose.pose.orientation
             
             self.tf_broadcaster.sendTransform(t)
 
 
 if __name__ == '__main__':
     try:
-        node = MujocoSimPassiveNode()
+        node = MujocoSimWithForcesNode()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass 

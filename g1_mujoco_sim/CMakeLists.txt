@@ -166,7 +166,8 @@ include_directories(
 catkin_install_python(PROGRAMS
   scripts/mujoco_sim_node.py
   scripts/debug_actuators.py
-  scripts/test_mujoco_model.py
+  scripts/external_force_injector.py
+  scripts/mujoco_sim_with_forces.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
